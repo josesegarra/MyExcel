@@ -496,8 +496,13 @@ $JExcel = {
     function generateCell(cell, column, row) {
         var s = '<c r="' + cellName(column, row) + '"';
         if (cell.s) s = s + ' s="' + cell.s + '" ';
-        if (isNaN(cell.v)) return s + ' t="inlineStr" ><is><t>' + escape(cell.v) + '</t></is></c>';
-        return s + '><v>' + cell.v + '</v></c>';
+        
+		var value=cell.v;
+		if (isNaN(value)) {
+			if (value.charAt(0)!='=') return s + ' t="inlineStr" ><is><t>' + escape(value) + '</t></is></c>';
+			return s+' ><f>'+value.substring(1)+'</f></c>';
+        }
+		return s + '><v>' + value + '</v></c>';
     }
 
     function generateRow(row, index) {

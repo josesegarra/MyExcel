@@ -21,6 +21,13 @@
 			excel.set( {sheet:0,value:"This is Sheet 1" } );
 		    excel.addSheet("Sheet 2");
 			
+			
+			excel.set(0,8,1,15);		
+			excel.set(0,8,2,13);		
+			excel.set(0,7,3,"15+13");		
+			excel.set(0,8,3,"=I2+I3");		
+
+			
 			var evenRow=excel.addStyle ( { 																	// Style for even ROWS
 				border: "none,none,none,thin #333333"});													// Borders are LEFT,RIGHT,TOP,BOTTOM. Check $JExcel.borderStyles for a list of valid border styles
 
