@@ -9,7 +9,7 @@ $JExcel = {
     var horAlign = ["LEFT", "CENTER", "RIGHT", "NONE"];
     var vertAlign = ["TOP", "CENTER", "BOTTOM", "NONE"];
     var align = {
-        L: "left", C: "center", R: "right", T: "top", B: "bottom"
+        L: "left", C: "center", R: "right", T: "top", B: "bottom", W: "wrapText"
     }
 
     function componentToHex(c) {
@@ -312,10 +312,12 @@ $JExcel = {
         if (style.align) {
             var h = align[style.align.charAt(0)];
             var v = align[style.align.charAt(1)];
-            if (h || v) {
+	        var w = align[style.align.charAt(2)];
+            if (h || v || w) {
                 alignXml = "<alignment ";
                 if (h) alignXml = alignXml + ' horizontal="' + h + '" ';
                 if (v) alignXml = alignXml + ' vertical="' + v + '" ';
+				if (w) alignXml = alignXml + ' ' + w + '="1" ';
                 alignXml = alignXml + " />";
             }
         }
@@ -359,12 +361,9 @@ $JExcel = {
 
 
     function normalizeAlign(a) {
-        if (!a) return "--";
-
-        var a = replaceAllMultiple(a.toString(), "  ", " ").trim().toUpperCase().split(" ");
-        if (a.length == 0) return "--";
-        if (a.length == 1) a[1] = "-";
-        return a[0].charAt(0) + a[1].charAt(0) + "--";
+        if (!a) return "---";
+        var a = replaceAllMultiple(a.toString() + " - - -", "  ", " ").trim().toUpperCase().split(" ");
+        return a[0].charAt(0) + a[1].charAt(0)  + a[2].charAt(0);
     }
 
     function normalizeBorders(b) {
