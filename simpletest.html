@@ -1,0 +1,43 @@
+<html lang="en">
+  <head>
+    <script type="text/javascript" src="jszip.js"></script>
+    <script type="text/javascript" src="FileSaver.js"></script>
+    <script type="text/javascript" src="myexcel.js"></script>
+    <script>
+      "use strict";
+
+      function go() {
+      var excel = $JExcel.new("Calibri light 10 #333333");
+      var textStyle = excel.addStyle({align: "L", format: "@"});
+      var zeroStyle = excel.addStyle({align: "L", format: "0"});
+      var isstringStyle = excel.addStyle({align: "L", format: "@", isstring: true});
+
+      excel.set(0,0,1, "01234567890123456789 with format @", textStyle);
+      excel.set(0,1,1, "01234567890123456789", textStyle);
+      
+      excel.set(0,0,2, "01234567890123456789 with format 0", textStyle);
+      excel.set(0,1,2, "01234567890123456789", zeroStyle);
+
+      excel.set(0,0,3, "012345678901234 with format @", textStyle);
+      excel.set(0,1,3, "012345678901234", textStyle);
+
+      excel.set(0,0,4, "012345678901234 with format 0", textStyle);
+      excel.set(0,1,4, "012345678901234", zeroStyle);
+
+      excel.set(0,0,5, "01234567890123456789, format @ and isstring=true", textStyle);
+      excel.set(0,1,5, "01234567890123456789", isstringStyle);
+
+      excel.set(0,0,6, " =1+2, format=@");
+      excel.set(0,1,6, "=1+2", textStyle);
+
+      excel.set(0,0,7, " =1+2, format=@, isstring=true", isstringStyle);
+      excel.set(0,1,7, "=1+2", isstringStyle);
+
+      excel.generate("TestData.xlsx");
+      }
+    </script>
+  </head>
+  <body>
+    <a href="#" onclick="go();">Simple Test GO</a>
+  </body>
+</html>

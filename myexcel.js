@@ -180,8 +180,9 @@ $JExcel = {
         return (row[x] ? row[x] : setV(row, x, {}));
     }
 
-    function setCell(cell, value, style) {
+    function setCell(cell, value, style, isstring) {
         if (value != undefined) cell.v = value;
+        cell.isstring = isstring;
         if (style) cell.s = style;
     }
 
@@ -389,7 +390,7 @@ $JExcel = {
 
         var oStyles = {
             add: function (a) {
-                var style = {};
+                var style = {isstring: a.isstring};
                 if (a.fill && a.fill.charAt(0) == "#") style.fill = 2 + findOrAdd(fills, a.fill.toString().substring(1).toUpperCase());                  // If there is a fill color add it, with a gap of 2, because of the TWO DEFAULT HARDCODED fills
                 if (a.font) style.font = findOrAdd(fonts, normalizeFont(a.font.toString().trim()));
                 if (a.format) style.format = findOrAdd(formats, a.format);
@@ -497,8 +498,8 @@ $JExcel = {
         if (cell.s) s = s + ' s="' + cell.s + '" ';
         
 		var value=cell.v;
-		if (isNaN(value)) {
-			if (value.charAt(0)!='=') return s + ' t="inlineStr" ><is><t>' + escape(value) + '</t></is></c>';
+		if (cell.isstring || isNaN(value)) {
+			if (cell.isstring || value.charAt(0)!='=') return s + ' t="inlineStr" ><is><t>' + escape(value) + '</t></is></c>';
 			return s+' ><f>'+value.substring(1)+'</f></c>';
         }
 		return s + '><v>' + value + '</v></c>';
@@ -623,7 +624,10 @@ $JExcel = {
             s = sheets.get(s);
             if (isNaN(column) && isNaN(row)) return s.set(value, style);                                                            // If this is a sheet operation
             if (!isNaN(column)) {                                                                                                    // If this is a column operation
-                if (!isNaN(row)) return setCell(s.getCell(column, row), value, style);                                                // and also a ROW operation the this is a CELL operation
+                if (!isNaN(row)) {
+                    var isstring = style && styles.getStyle(style-1).isstring;
+                    return setCell(s.getCell(column, row), value, style, isstring);                                                // and also a ROW operation the this is a CELL operation
+                }
                 return setColumn(s.getColumn(column), value, style);                                                                // if not we confirm than this is a COLUMN operation
             }
             return setRow(s.getRow(row), value, style);                                                                             // If got here, thet this is a Row operation
