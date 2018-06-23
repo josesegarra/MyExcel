@@ -643,8 +643,9 @@ $JExcel = {
             xl.file('_rels/workbook.xml.rels', sheets.toWorkBookRels());                                        // Add WorkBook RELs
             zip.file('[Content_Types].xml', sheets.toContentType());                                            // Add content types
             sheets.fileData(xl);                                                                                // Zip the rest    
-            zip.generateAsync({ type: "blob" }).then(function (content) { saveAs(content, filename); });        // And generate !!!
-        }
+            zip.generateAsync({ type: "blob",mimeType:"application/vnd.ms-excel" }).then(function (content) { saveAs(content, filename); });        // And generate !!!
+       
+	}
         return excel;
     }
 })();
