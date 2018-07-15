@@ -107,12 +107,12 @@ $JExcel = {
 
 
     var templateSheet = '<?xml version="1.0" ?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
-                'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mv="urn:schemas-microsoft-com:mac:vml" ' +
-                'xmlns:mx="http://schemas.microsoft.com/office/mac/excel/2008/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
-                'xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ' +
-                'xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">' +
-                '{columns}' +
-                '<sheetData>{rows}</sheetData></worksheet>';
+        'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mv="urn:schemas-microsoft-com:mac:vml" ' +
+        'xmlns:mx="http://schemas.microsoft.com/office/mac/excel/2008/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+        'xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ' +
+        'xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">' +
+        '{columns}' +
+        '<sheetData>{rows}</sheetData>{mergeCells}</worksheet>';
 
 
     // --------------------- BEGIN of generic UTILS
@@ -158,7 +158,9 @@ $JExcel = {
 
 
     function getAsXml(sheet) {
-        return templateSheet.replace('{columns}', generateColums(sheet.columns)).replace("{rows}", generateRows(sheet.rows));
+        return templateSheet.replace('{columns}', generateColums(sheet.columns))
+                            .replace("{rows}", generateRows(sheet.rows, sheet.mergeCells))
+                            .replace("{mergeCells}", generateMergeCells(sheet.mergeCells));
     }
 
 
@@ -180,10 +182,11 @@ $JExcel = {
         return (row[x] ? row[x] : setV(row, x, {}));
     }
 
-    function setCell(cell, value, style, isstring) {
+    function setCell(cell, value, style, isstring, colspan) {
         if (value != undefined) cell.v = value;
         cell.isstring = isstring;
         if (style) cell.s = style;
+        if (colspan) cell.colspan = colspan;
     }
 
     function setColumn(column, value, style) {
@@ -203,7 +206,7 @@ $JExcel = {
         var oSheets = {
             sheets: [],
             add: function (name) {
-                var sheet = { id: this.sheets.length + 1, rId: "rId" + (3 + this.sheets.length), name: name, rows: [], columns: [], getColumn: getColumn, set: setSheet, getRow: getRow, getCell: getCell };
+                var sheet = { id: this.sheets.length + 1, rId: "rId" + (3 + this.sheets.length), name: name, rows: [], columns: [], getColumn: getColumn, set: setSheet, getRow: getRow, getCell: getCell, mergeCells: [] };
                 return pushI(this.sheets, sheet);
             },
             get: function (index) {
@@ -493,23 +496,28 @@ $JExcel = {
         return cellNameH(colIndex)+rowIndex;
     };
 
-    function generateCell(cell, column, row) {
-        var s = '<c r="' + cellName(column, row) + '"';
-        if (cell.s) s = s + ' s="' + cell.s + '" ';
+    function generateCell(cell, column, row, mergeCells) {
+      if (cell.colspan > 1) {
+          var m = { from: cellName(column, row), to: cellName(column + cell.colspan - 1, row) };
+          mergeCells.push(m);
+      }        
+      var s = '<c r="' + cellName(column, row) + '"';
+      if (cell.s) s = s + ' s="' + cell.s + '" ';
         
-		var value=cell.v;
-		if (cell.isstring || isNaN(value)) {
-			if (cell.isstring || value.charAt(0)!='=') return s + ' t="inlineStr" ><is><t>' + escape(value) + '</t></is></c>';
-			return s+' ><f>'+value.substring(1)+'</f></c>';
-        }
-		return s + '><v>' + value + '</v></c>';
+        
+		  var value=cell.v;
+		  if (cell.isstring || isNaN(value)) {
+  			if (cell.isstring || value.charAt(0)!='=') return s + ' t="inlineStr" ><is><t>' + escape(value) + '</t></is></c>';
+			  return s+' ><f>'+value.substring(1)+'</f></c>';
+      }
+		  return s + '><v>' + value + '</v></c>';
     }
 
-    function generateRow(row, index) {
+    function generateRow(row, index, mergeCells) {
         var rowIndex = index + 1;
         var oCells = [];
         for (var i = 0; i < row.cells.length; i++) {
-            if (row.cells[i]) oCells.push(generateCell(row.cells[i], i, rowIndex));
+            if (row.cells[i]) oCells.push(generateCell(row.cells[i], i, rowIndex, mergeCells));
         }
         var s = '<row r="' + rowIndex + '" '
         if (row.ht) s = s + ' ht="' + row.ht + '" customHeight="1" ';
@@ -517,12 +525,23 @@ $JExcel = {
         return s + ' >' + oCells.join('') + '</row>';
     }
 
+    function generateMergeCells(mergeCells) {
+        if (mergeCells.length == 0) return;
 
-    function generateRows(rows) {
+        var s = '<mergeCells count="' + mergeCells.length + '">';
+        for (var i = 0; i < mergeCells.length; i++) {
+            var m = mergeCells[i];
+            if (m) {
+                s = s + '<mergeCell ref="' + m.from + ':' + m.to + '" />';
+            }
+        }
+        return s + "</mergeCells>";
+    }
+    function generateRows(rows, mergeCells) {
         var oRows = [];
         for (var index = 0; index < rows.length; index++) {
             if (rows[index]) {
-                oRows.push(generateRow(rows[index], index));
+                oRows.push(generateRow(rows[index], index, mergeCells));
             }
         }
         return oRows.join('');
@@ -618,7 +637,7 @@ $JExcel = {
             return styles.add(a);
         }
 
-        excel.set = function (s, column, row, value, style) {
+        excel.set = function (s, column, row, value, style, colspan) {
             if (isObject(s)) return this.set(s.sheet, s.column, s.row, s.value, s.style);                                           // If using Object form, expand it
             if (!s) s = 0;                                                                                                          // Use default sheet
             s = sheets.get(s);
