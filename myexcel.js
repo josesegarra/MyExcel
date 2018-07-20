@@ -307,6 +307,11 @@ $JExcel = {
         return where;
     }
 
+    function createKey(style) {
+        if (!style.key) {
+            style.key = JSON.stringify(style);
+        }
+    }
 
     function toStyleXml(style) {
         var alignXml = "";
@@ -322,11 +327,11 @@ $JExcel = {
                 alignXml = alignXml + " />";
             }
         }
-        var s = '<xf numFmtId="' + style.format + '" fontId="' + style.font + '" fillId="' + style.fill + '" borderId="' + style.border + '" xfId="0" ';
-        if (style.border != 0) s = s + ' applyBorder="1" ';
+        var s = '<xf numFmtId="' + (style.format || 0) + '" fontId="' + (style.font || 0) + '" fillId="' + (style.fill || 0) + '" borderId="' + (style.border || 0) + '" xfId="0" ';
+        if ((style.border || 0) != 0) s = s + ' applyBorder="1" ';
         if (style.format >= baseFormats) s = s + ' applyNumberFormat="1" ';
-        if (style.fill != 0) s = s + ' applyFill="1" ';
-        if (alignXml != "") s = s + ' applyAlignment="1" ';
+        if ((style.fill || 0) != 0) s = s + ' applyFill="1" ';
+        if ((alignXml || "") != "") s = s + ' applyAlignment="1" ';
         s = s + '>';
         s = s + alignXml;
         return s + "</xf>";
@@ -396,6 +401,11 @@ $JExcel = {
                 if (a.format) style.format = findOrAdd(formats, a.format);
                 if (a.align) style.align = normalizeAlign(a.align);
                 if (a.border) style.border = 1 + findOrAdd(borders, normalizeBorders(a.border.toString().trim()));                                          // There is a HARDCODED border         
+
+                createKey(style);   
+                for (var i = styles.length - 1; i >= 0; i--) {
+                    if (styles[i].key == style.key) return 1 + i;
+                }  
                 return 1 + pushI(styles, style);                                                            // Add the style and return INDEX+1 because of the DEFAULT HARDCODED style
             }
         };
@@ -405,9 +415,11 @@ $JExcel = {
 
 
         oStyles.register = function (thisOne) {
-            for (var i = 0; i < styles.length; i++) {
-                if (styles[i].font == thisOne.font && styles[i].format == thisOne.format && styles[i].fill == thisOne.fill && styles[i].border == thisOne.border && styles[i].align == thisOne.align) return i;
-            }
+            createKey(thisOne);
+
+            for (var i = styles.length - 1; i >= 0; i--) {
+                 if (styles[i].key == thisOne.key) return i;
+            } 
             return pushI(styles, thisOne);
         }
 
@@ -554,7 +566,7 @@ $JExcel = {
     //  If a row has a style it tries to apply the style componenets to all cells in the row (provided that the cell has not defined is not own style component)
 
     function CombineStyles(sheets, styles) {
-        // First lets do the Rows
+        // First lets do the sheets
         for (var i = 0; i < sheets.length; i++) {
             // First let's do the rows
             for (var j = 0; j < sheets[i].rows.length; j++) {
@@ -597,6 +609,7 @@ $JExcel = {
             }
         }
         if (!b) return;                                         // If the toAdd style does NOT add anything new
+        delete ns.key; // the key should be recalculated, remove the key from any of the origin objects
         cell.s = 1 + styles.register(ns);
     }
 
