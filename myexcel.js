@@ -134,7 +134,7 @@ $JExcel = {
     }
 
     function pushI(list, value) {
-        list.push(value);
+        list.push(value); 
         return list.length - 1;
     }
 
@@ -333,7 +333,7 @@ $JExcel = {
         if ((style.fill || 0) != 0) s = s + ' applyFill="1" ';
         if ((alignXml || "") != "") s = s + ' applyAlignment="1" ';
         s = s + '>';
-        s = s + alignXml;
+        s = s + alignXml; 
         return s + "</xf>";
     }
 
