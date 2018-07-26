@@ -111,7 +111,7 @@ $JExcel = {
         'xmlns:mx="http://schemas.microsoft.com/office/mac/excel/2008/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
         'xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ' +
         'xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">' +
-        '{columns}' +
+        '{views}{columns}' +
         '<sheetData>{rows}</sheetData>{mergeCells}</worksheet>';
 
 
@@ -158,7 +158,8 @@ $JExcel = {
 
 
     function getAsXml(sheet) {
-        return templateSheet.replace('{columns}', generateColums(sheet.columns))
+        return templateSheet.replace('{views}', generateViews(sheet.views))
+                            .replace('{columns}', generateColums(sheet.columns))
                             .replace("{rows}", generateRows(sheet.rows, sheet.mergeCells))
                             .replace("{mergeCells}", generateMergeCells(sheet.mergeCells));
     }
@@ -199,6 +200,13 @@ $JExcel = {
         if (style) row.style = style;
     }
 
+    function freezePane(x, y) {
+        var pane = { topLeftCell: cellName(x, y) };
+        if (x >= 0) { pane.xSplit = x; }
+        if (y >= 0) { pane.ySplit = y - 1; }
+        var view = { panes: [pane] };
+        view.workbookViewId = pushI(this.views, view);
+    }
     // ------------------- END Sheet DATA Handling
 
 
@@ -206,7 +214,7 @@ $JExcel = {
         var oSheets = {
             sheets: [],
             add: function (name) {
-                var sheet = { id: this.sheets.length + 1, rId: "rId" + (3 + this.sheets.length), name: name, rows: [], columns: [], getColumn: getColumn, set: setSheet, getRow: getRow, getCell: getCell, mergeCells: [] };
+                var sheet = { id: this.sheets.length + 1, rId: "rId" + (3 + this.sheets.length), name: name, rows: [], columns: [], getColumn: getColumn, set: setSheet, getRow: getRow, getCell: getCell, mergeCells: [], views: [], freezePane: freezePane };
                 return pushI(this.sheets, sheet);
             },
             get: function (index) {
@@ -372,7 +380,7 @@ $JExcel = {
     function normalizeAlign(a) {
         if (!a) return "---";
         var a = replaceAllMultiple(a.toString() + " - - -", "  ", " ").trim().toUpperCase().split(" ");
-        return a[0].charAt(0) + a[1].charAt(0)  + a[2].charAt(0);
+        return a[0].charAt(0) + a[1].charAt(0) + a[2].charAt(0);
     }
 
     function normalizeBorders(b) {
@@ -575,6 +583,31 @@ $JExcel = {
         return s + "</cols>";
     }
 
+    function generateViews(views) {
+        if (views.length == 0) return;
+
+        var s = '<sheetViews>';
+        for (var i = 0; i < views.length; i++) {
+            var c = views[i];
+            if (c && c.panes && c.panes.length) {
+                s += '<sheetView workbookViewId="' + (c.workbookViewId || i) + '">';
+                for (var p = 0; p < c.panes.length; p++) {
+                    var pane = c.panes[p];
+                    s += '<pane state="frozen" topLeftCell="' + pane.topLeftCell + '"';
+                    if (pane.xSplit) {
+                        s += ' xSplit="' + pane.xSplit + '"';
+                    }
+                    if (pane.ySplit) {
+                        s += ' ySplit="' + pane.ySplit + '"';
+                    }
+                    s += '/>';
+                }
+                s += '</sheetView>';
+            }
+        }
+        s += "</sheetViews>"; 
+        return s;
+    }
 
     function isObject(v) {
         return (v !== null && typeof v === 'object');
@@ -651,18 +684,22 @@ $JExcel = {
         }
 
         excel.set = function (s, column, row, value, style, colspan) {
-            if (isObject(s)) return this.set(s.sheet, s.column, s.row, s.value, s.style);                                           // If using Object form, expand it
-            if (!s) s = 0;                                                                                                          // Use default sheet
+            if (isObject(s)) return this.set(s.sheet, s.column, s.row, s.value, s.style);                                        // If using Object form, expand it
+            if (!s) s = 0;                                                                                                       // Use default sheet
             s = sheets.get(s);
-            if (isNaN(column) && isNaN(row)) return s.set(value, style);                                                            // If this is a sheet operation
-            if (!isNaN(column)) {                                                                                                    // If this is a column operation
+            if (isNaN(column) && isNaN(row)) return s.set(value, style);                                                         // If this is a sheet operation
+            if (!isNaN(column)) {                                                                                                // If this is a column operation
                 if (!isNaN(row)) {
                     var isstring = style && styles.getStyle(style-1).isstring;
-                    return setCell(s.getCell(column, row), value, style, isstring);                                                // and also a ROW operation the this is a CELL operation
+                    return setCell(s.getCell(column, row), value, style, isstring);                                              // and also a ROW operation the this is a CELL operation
                 }
-                return setColumn(s.getColumn(column), value, style);                                                                // if not we confirm than this is a COLUMN operation
+                return setColumn(s.getColumn(column), value, style);                                                             // if not we confirm than this is a COLUMN operation
             }
-            return setRow(s.getRow(row), value, style);                                                                             // If got here, thet this is a Row operation
+            return setRow(s.getRow(row), value, style);                                                                          // If got here, thet this is a Row operation
+        }
+
+        excel.freezePane = function (s, x, y) {
+            sheets.get(s).freezePane(x, y);
         }
 
         excel.generate = function (filename) {
