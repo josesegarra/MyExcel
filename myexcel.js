@@ -123,7 +123,7 @@ $JExcel = {
 
     function findOrAdd(list, value) {
         var i = list.indexOf(value);
-        if (i != -1) return i;
+        if (i !== -1) return i;
         list.push(value);
         return list.length - 1;
     }
@@ -274,7 +274,7 @@ $JExcel = {
     // --------------------- BEGIN Handling of style
 
     function toFontXml(f) {
-        var f = f.split(";");
+        f = f.split(";");
         return '<font>' +
             (f[3].indexOf("B") > -1 ? '<b />' : '') +
             (f[3].indexOf("I") > -1 ? '<i />' : '') +
@@ -353,7 +353,7 @@ $JExcel = {
     function normalizeFont(fontDescription) {
         fontDescription = replaceAllMultiple(fontDescription, "  ", " ");
         var fNormalized = ["_", "_", "_", "_"];                                 //  Name - Size - Color - Style (use NONE as placeholder) 
-        var i = 0, list = fontDescription.split(" ");                       //  Split by " "
+        var list = fontDescription.split(" ");                               //  Split by " "
         var name = [];
         while (list[0] && (list[0] != "none") && (isNaN(list[0])) && (list[0].charAt(0) != "#")) {
             name.push(list[0].charAt(0).toUpperCase() + list[0].substring(1).toLowerCase());
@@ -379,7 +379,7 @@ $JExcel = {
 
     function normalizeAlign(a) {
         if (!a) return "---";
-        var a = replaceAllMultiple(a.toString() + " - - -", "  ", " ").trim().toUpperCase().split(" ");
+        a = replaceAllMultiple(a.toString() + " - - -", "  ", " ").trim().toUpperCase().split(" ");
         return a[0].charAt(0) + a[1].charAt(0) + a[2].charAt(0);
     }
 
@@ -546,7 +546,7 @@ $JExcel = {
     }
 
     function generateMergeCells(mergeCells) {
-        if (mergeCells.length == 0) return;
+        if (mergeCells.length === 0) return '';
 
         var s = '<mergeCells count="' + mergeCells.length + '">';
         for (var i = 0; i < mergeCells.length; i++) {
@@ -568,7 +568,7 @@ $JExcel = {
     }
 
     function generateColums(columns) {
-        if (columns.length == 0) return;
+        if (columns.length === 0) return '';
 
         var s = '<cols>';
         for (var i = 0; i < columns.length; i++) {
@@ -584,7 +584,7 @@ $JExcel = {
     }
 
     function generateViews(views) {
-        if (views.length == 0) return;
+        if (views.length === 0) return '';
 
         var s = '<sheetViews>';
         for (var i = 0; i < views.length; i++) {
@@ -691,7 +691,7 @@ $JExcel = {
             if (!isNaN(column)) {                                                                                                // If this is a column operation
                 if (!isNaN(row)) {
                     var isstring = style && styles.getStyle(style-1).isstring;
-                    return setCell(s.getCell(column, row), value, style, isstring);                                              // and also a ROW operation the this is a CELL operation
+                    return setCell(s.getCell(column, row), value, style, isstring, colspan);                                     // and also a ROW operation the this is a CELL operation
                 }
                 return setColumn(s.getColumn(column), value, style);                                                             // if not we confirm than this is a COLUMN operation
             }
