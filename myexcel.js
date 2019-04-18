@@ -691,7 +691,7 @@ $JExcel = {
             if (!isNaN(column)) {                                                                                                // If this is a column operation
                 if (!isNaN(row)) {
                     var isstring = style && styles.getStyle(style-1).isstring;
-                    return setCell(s.getCell(column, row), value, style, isstring);                                              // and also a ROW operation the this is a CELL operation
+                    return setCell(s.getCell(column, row), value, style, isstring, colspan);                                              // and also a ROW operation the this is a CELL operation
                 }
                 return setColumn(s.getColumn(column), value, style);                                                             // if not we confirm than this is a COLUMN operation
             }
