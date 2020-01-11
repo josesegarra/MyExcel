@@ -1,3 +1,6 @@
+// Licensed under MIT (https://opensource.org/licenses/MIT),  but if you use it, I´d appreciate if you let me know.
+
+
 $JExcel = {
 };
 
