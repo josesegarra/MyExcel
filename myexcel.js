@@ -687,14 +687,14 @@ $JExcel = {
         }
 
         excel.set = function (s, column, row, value, style, colspan) {
-            if (isObject(s)) return this.set(s.sheet, s.column, s.row, s.value, s.style);                                        // If using Object form, expand it
+            if (isObject(s)) return this.set(s.sheet, s.column, s.row, s.value, s.style, colspan);                                           // If using Object form, expand it
             if (!s) s = 0;                                                                                                       // Use default sheet
             s = sheets.get(s);
             if (isNaN(column) && isNaN(row)) return s.set(value, style);                                                         // If this is a sheet operation
             if (!isNaN(column)) {                                                                                                // If this is a column operation
                 if (!isNaN(row)) {
                     var isstring = style && styles.getStyle(style-1).isstring;
-                    return setCell(s.getCell(column, row), value, style, isstring, colspan);                                              // and also a ROW operation the this is a CELL operation
+                    return setCell(s.getCell(column, row), value, style, isstring, colspan);                                                // and also a ROW operation the this is a CELL operation
                 }
                 return setColumn(s.getColumn(column), value, style);                                                             // if not we confirm than this is a COLUMN operation
             }

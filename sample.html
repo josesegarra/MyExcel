@@ -67,6 +67,9 @@
 				excel.set(0,4,i,"Some other text");															// Some other text
 				}
 
+			const mergedCellStyle = excel.addStyle( {align:"C", font: "Calibri 12 #0000AA B"});
+			excel.set(0, 0, 50, "This cells are merged!", mergedCellStyle, 5);								// This cells are merged using colspan
+
 			excel.set(0,1,undefined,30);																	// Set COLUMN 1 to 30 chars width
 			excel.set(0,3,undefined,30);																	// Set COLUMN 3 to 20 chars width
 			excel.set(0,4,undefined,20, excel.addStyle( {align:"R"}));										// Align column 4 to the right
