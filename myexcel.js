@@ -1,3 +1,6 @@
+// Licensed under MIT (https://opensource.org/licenses/MIT),  but if you use it, I´d appreciate if you let me know.
+
+
 $JExcel = {
 };
 
@@ -111,7 +114,7 @@ $JExcel = {
         'xmlns:mx="http://schemas.microsoft.com/office/mac/excel/2008/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
         'xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ' +
         'xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">' +
-        '{columns}' +
+        '{views}{columns}' +
         '<sheetData>{rows}</sheetData>{mergeCells}</worksheet>';
 
 
@@ -134,7 +137,7 @@ $JExcel = {
     }
 
     function pushI(list, value) {
-        list.push(value);
+        list.push(value); 
         return list.length - 1;
     }
 
@@ -158,7 +161,8 @@ $JExcel = {
 
 
     function getAsXml(sheet) {
-        return templateSheet.replace('{columns}', generateColums(sheet.columns))
+        return templateSheet.replace('{views}', generateViews(sheet.views))
+                            .replace('{columns}', generateColums(sheet.columns))
                             .replace("{rows}", generateRows(sheet.rows, sheet.mergeCells))
                             .replace("{mergeCells}", generateMergeCells(sheet.mergeCells));
     }
@@ -199,6 +203,13 @@ $JExcel = {
         if (style) row.style = style;
     }
 
+    function freezePane(x, y) {
+        var pane = { topLeftCell: cellName(x, y) };
+        if (x >= 0) { pane.xSplit = x; }
+        if (y >= 0) { pane.ySplit = y - 1; }
+        var view = { panes: [pane] };
+        view.workbookViewId = pushI(this.views, view);
+    }
     // ------------------- END Sheet DATA Handling
 
 
@@ -206,7 +217,7 @@ $JExcel = {
         var oSheets = {
             sheets: [],
             add: function (name) {
-                var sheet = { id: this.sheets.length + 1, rId: "rId" + (3 + this.sheets.length), name: name, rows: [], columns: [], getColumn: getColumn, set: setSheet, getRow: getRow, getCell: getCell, mergeCells: [] };
+                var sheet = { id: this.sheets.length + 1, rId: "rId" + (3 + this.sheets.length), name: name, rows: [], columns: [], getColumn: getColumn, set: setSheet, getRow: getRow, getCell: getCell, mergeCells: [], views: [], freezePane: freezePane };
                 return pushI(this.sheets, sheet);
             },
             get: function (index) {
@@ -310,6 +321,11 @@ $JExcel = {
         return where;
     }
 
+    function createKey(style) {
+        if (!style.key) {
+            style.key = JSON.stringify(style);
+        }
+    }
 
     function toStyleXml(style) {
         var alignXml = "";
@@ -325,13 +341,13 @@ $JExcel = {
                 alignXml = alignXml + " />";
             }
         }
-        var s = '<xf numFmtId="' + style.format + '" fontId="' + style.font + '" fillId="' + style.fill + '" borderId="' + style.border + '" xfId="0" ';
-        if (style.border != 0) s = s + ' applyBorder="1" ';
+        var s = '<xf numFmtId="' + (style.format || 0) + '" fontId="' + (style.font || 0) + '" fillId="' + (style.fill || 0) + '" borderId="' + (style.border || 0) + '" xfId="0" ';
+        if ((style.border || 0) != 0) s = s + ' applyBorder="1" ';
         if (style.format >= baseFormats) s = s + ' applyNumberFormat="1" ';
-        if (style.fill != 0) s = s + ' applyFill="1" ';
-        if (alignXml != "") s = s + ' applyAlignment="1" ';
+        if ((style.fill || 0) != 0) s = s + ' applyFill="1" ';
+        if ((alignXml || "") != "") s = s + ' applyAlignment="1" ';
         s = s + '>';
-        s = s + alignXml;
+        s = s + alignXml; 
         return s + "</xf>";
     }
 
@@ -367,7 +383,7 @@ $JExcel = {
     function normalizeAlign(a) {
         if (!a) return "---";
         var a = replaceAllMultiple(a.toString() + " - - -", "  ", " ").trim().toUpperCase().split(" ");
-        return a[0].charAt(0) + a[1].charAt(0)  + a[2].charAt(0);
+        return a[0].charAt(0) + a[1].charAt(0) + a[2].charAt(0);
     }
 
     function normalizeBorders(b) {
@@ -399,6 +415,11 @@ $JExcel = {
                 if (a.format) style.format = findOrAdd(formats, a.format);
                 if (a.align) style.align = normalizeAlign(a.align);
                 if (a.border) style.border = 1 + findOrAdd(borders, normalizeBorders(a.border.toString().trim()));                                          // There is a HARDCODED border         
+
+                createKey(style);   
+                for (var i = styles.length - 1; i >= 0; i--) {
+                    if (styles[i].key == style.key) return 1 + i;
+                }  
                 return 1 + pushI(styles, style);                                                            // Add the style and return INDEX+1 because of the DEFAULT HARDCODED style
             }
         };
@@ -408,9 +429,11 @@ $JExcel = {
 
 
         oStyles.register = function (thisOne) {
-            for (var i = 0; i < styles.length; i++) {
-                if (styles[i].font == thisOne.font && styles[i].format == thisOne.format && styles[i].fill == thisOne.fill && styles[i].border == thisOne.border && styles[i].align == thisOne.align) return i;
-            }
+            createKey(thisOne);
+
+            for (var i = styles.length - 1; i >= 0; i--) {
+                 if (styles[i].key == thisOne.key) return i;
+            } 
             return pushI(styles, thisOne);
         }
 
@@ -563,6 +586,31 @@ $JExcel = {
         return s + "</cols>";
     }
 
+    function generateViews(views) {
+        if (views.length == 0) return;
+
+        var s = '<sheetViews>';
+        for (var i = 0; i < views.length; i++) {
+            var c = views[i];
+            if (c && c.panes && c.panes.length) {
+                s += '<sheetView workbookViewId="' + (c.workbookViewId || i) + '">';
+                for (var p = 0; p < c.panes.length; p++) {
+                    var pane = c.panes[p];
+                    s += '<pane state="frozen" topLeftCell="' + pane.topLeftCell + '"';
+                    if (pane.xSplit) {
+                        s += ' xSplit="' + pane.xSplit + '"';
+                    }
+                    if (pane.ySplit) {
+                        s += ' ySplit="' + pane.ySplit + '"';
+                    }
+                    s += '/>';
+                }
+                s += '</sheetView>';
+            }
+        }
+        s += "</sheetViews>"; 
+        return s;
+    }
 
     function isObject(v) {
         return (v !== null && typeof v === 'object');
@@ -573,7 +621,7 @@ $JExcel = {
     //  If a row has a style it tries to apply the style componenets to all cells in the row (provided that the cell has not defined is not own style component)
 
     function CombineStyles(sheets, styles) {
-        // First lets do the Rows
+        // First lets do the sheets
         for (var i = 0; i < sheets.length; i++) {
             // First let's do the rows
             for (var j = 0; j < sheets[i].rows.length; j++) {
@@ -616,6 +664,7 @@ $JExcel = {
             }
         }
         if (!b) return;                                         // If the toAdd style does NOT add anything new
+        delete ns.key; // the key should be recalculated, remove the key from any of the origin objects
         cell.s = 1 + styles.register(ns);
     }
 
@@ -639,17 +688,21 @@ $JExcel = {
 
         excel.set = function (s, column, row, value, style, colspan) {
             if (isObject(s)) return this.set(s.sheet, s.column, s.row, s.value, s.style, colspan);                                           // If using Object form, expand it
-            if (!s) s = 0;                                                                                                          // Use default sheet
+            if (!s) s = 0;                                                                                                       // Use default sheet
             s = sheets.get(s);
-            if (isNaN(column) && isNaN(row)) return s.set(value, style);                                                            // If this is a sheet operation
-            if (!isNaN(column)) {                                                                                                    // If this is a column operation
+            if (isNaN(column) && isNaN(row)) return s.set(value, style);                                                         // If this is a sheet operation
+            if (!isNaN(column)) {                                                                                                // If this is a column operation
                 if (!isNaN(row)) {
                     var isstring = style && styles.getStyle(style-1).isstring;
                     return setCell(s.getCell(column, row), value, style, isstring, colspan);                                                // and also a ROW operation the this is a CELL operation
                 }
-                return setColumn(s.getColumn(column), value, style);                                                                // if not we confirm than this is a COLUMN operation
+                return setColumn(s.getColumn(column), value, style);                                                             // if not we confirm than this is a COLUMN operation
             }
-            return setRow(s.getRow(row), value, style);                                                                             // If got here, thet this is a Row operation
+            return setRow(s.getRow(row), value, style);                                                                          // If got here, thet this is a Row operation
+        }
+
+        excel.freezePane = function (s, x, y) {
+            sheets.get(s).freezePane(x, y);
         }
 
         excel.generate = function (filename) {
