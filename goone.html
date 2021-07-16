@@ -1,0 +1,17 @@
+<html lang="en">
+  <head>
+    <script type="text/javascript" src="jszip.js"></script>
+    <script type="text/javascript" src="FileSaver.js"></script>
+    <script type="text/javascript" src="myexcel.js"></script>
+	<script>
+		function go(){
+		    var excel = $JExcel.new("Calibri light 10 #333333");			// Default font
+				excel.set(0,0,0,"Username");															// This column is a TEXT
+		    excel.generate("SampleData.xlsx");
+		}
+	</script>
+  </head>
+  <body>
+	<a href="#" onclick="go();">GO</a>
+  </body>
+</html>
