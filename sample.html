@@ -42,14 +42,14 @@
 			var headers=["Header 0","Header 1","Header 2","Header 3","Header 4"];							// This array holds the HEADERS text
 			var formatHeader=excel.addStyle ( { 															// Format for headers
 					border: "none,none,none,thin #333333", 													// 		Border for header
-					font: "Calibri 12 #0000AA B"}); 														// 		Font for headers
-
+					font: "Calibri 12 #0000AA B "}); 														// 		Font for headers BOLD 
+				
 			for (var i=0;i<headers.length;i++){																// Loop all the haders
 				excel.set(0,i,0,headers[i],formatHeader);													// Set CELL with header text, using header format
 				excel.set(0,i,undefined,"auto");															// Set COLUMN width to auto (according to the standard this is only valid for numeric columns)
 			}
 			
-			
+			excel.set(0,5,0,"Strike Text",excel.addStyle ({font: "Calibri 12 BS"}));						// Some text in BOLD and STRIKE	
 			// Now let's write some data
 			var initDate = new Date(2000, 0, 1);
 			var endDate = new Date(2016, 0, 1);

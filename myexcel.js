@@ -279,6 +279,7 @@ $JExcel = {
     function toFontXml(f) {
         var f = f.split(";");
         return '<font>' +
+            (f[3].indexOf("S") > -1 ? '<strike />' : '') +
             (f[3].indexOf("B") > -1 ? '<b />' : '') +
             (f[3].indexOf("I") > -1 ? '<i />' : '') +
             (f[3].indexOf("U") > -1 ? '<u />' : '') +
